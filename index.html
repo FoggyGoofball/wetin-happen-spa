@@ -1,0 +1,22 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Wetin Happen Reader</title>
+<style>body{font-family:system-ui;margin:0;background:#f3f4f6;color:#111}header{padding:16px;background:#111827;color:#fff}main{max-width:900px;margin:0 auto;padding:16px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px;margin-bottom:12px}.muted{color:#6b7280;font-size:12px}.hero{width:100%;max-height:320px;object-fit:cover;border-radius:8px;margin:8px 0}a{color:#2563eb;text-decoration:none}</style>
+</head><body>
+<header><h2 style="margin:0">Wetin Happen Reader</h2></header>
+<main>
+<div id="app" class="card">Loading...</div>
+</main>
+<script>
+const DB_BASE="https://raw.githubusercontent.com/FoggyGoofball/wetin-happen-db/main";
+const app=document.getElementById("app");
+const params=new URLSearchParams(location.search);
+const id=params.get("id");
+const esc=s=>String(s??"").replace(/[&<>\"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]));
+async function loadIndex(){const r=await fetch(`${DB_BASE}/data/index.json?`+Date.now());if(!r.ok)throw new Error("index load failed");return r.json();}
+async function loadArticle(path){const r=await fetch(`${DB_BASE}/${path}?`+Date.now());if(!r.ok)throw new Error("article load failed");return r.json();}
+function renderList(items){if(!items.length){app.innerHTML="<p>No articles yet.</p>";return;}app.innerHTML=`<h3 style="margin-top:0">Articles</h3>`+items.map(i=>`<div class="card"><a href="?id=${encodeURIComponent(i.id)}"><b>${esc(i.title)}</b></a><div class="muted">${esc(i.sourceDomain)} • ${new Date(i.savedAtUtc).toLocaleString()}</div></div>`).join("");}
+function renderArticle(a){const paras=(a.paragraphs||[]).map(p=>`<p>${esc(p.pidgin)}</p>`).join("");app.innerHTML=`<a href="./">? Back</a><h2>${esc(a.title)}</h2><div class="muted"><a href="${esc(a.sourceUrl)}" target="_blank">${esc(a.sourceDomain)}</a></div>${a.heroImageUrl?`<img class="hero" src="${esc(a.heroImageUrl)}"/>`:""}<div>${paras}</div>`;}
+(async()=>{try{const idx=await loadIndex();if(!id){renderList(idx);return;}const item=idx.find(x=>x.id===id);if(!item){app.textContent="Article not found.";return;}const article=await loadArticle(item.path);renderArticle(article);}catch(e){app.textContent="Could not load content.";console.error(e);}})();
+</script>
+</body></html>
